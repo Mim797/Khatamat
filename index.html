@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>متابع الختمات | Khatmah Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --c-bg: #f8fafc;
+            --c-card: #ffffff;
+            --c-border: #e2e8f0;
+            --c-text: #0f172a;
+            --c-muted: #64748b;
+            --c-emerald: #059669;
+            --c-emerald-light: #d1fae5;
+            --c-amber: #d97706;
+            --c-amber-light: #fef3c7;
+            --c-header-from: #0f172a;
+            --c-header-to: #1e293b;
+            --c-chip: #1e293b;
+            --c-chip-muted: #64748b;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        body {
+            font-family: 'Noto Sans Arabic', sans-serif;
+            background: var(--c-bg);
+            color: var(--c-text);
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+            min-height: 100dvh;
+        }
+
+        #app {
+            max-width: 640px;
+            margin: 0 auto;
+            background: var(--c-bg);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(160deg, var(--c-header-from), var(--c-header-to));
+            color: #fff;
+            padding: calc(16px + var(--safe-top)) 16px 24px;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            flex-shrink: 0;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .khatmah-badge {
+            width: 48px; height: 48px;
+            background: #f59e0b;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 18px;
+            color: #0f172a;
+            box-shadow: 0 4px 12px rgba(245,158,11,0.35);
+            flex-shrink: 0;
+        }
+
+        .header-title { font-size: 17px; font-weight: 900; line-height: 1.2; }
+        .streak-row { display: flex; align-items: center; gap: 4px; color: #fbbf24; font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn {
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .icon-btn:active { background: rgba(255,255,255,0.18); }
+        .icon-btn svg { width: 18px; height: 18px; }
+
+        /* Progress */
+        .progress-section { margin-bottom: 12px; }
+        .progress-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .progress-level { font-size: 11px; font-weight: 700; background: rgba(16,185,129,0.2); color: #6ee7b7; padding: 2px 8px; border-radius: 20px; }
+        .progress-pct { font-size: 11px; font-weight: 700; color: #6ee7b7; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #10b981, #06b6d4); border-radius: 99px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+        /* Timeline chips */
+        .chips-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .chips-row::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0;
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 900;
+            cursor: pointer;
+            background: var(--c-chip);
+            color: var(--c-chip-muted);
+            transition: transform 0.15s, background 0.15s;
+            border: none;
+        }
+        .chip.active { background: #fff; color: #0f172a; transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+        .chip.completed { outline: 2px solid #f59e0b; outline-offset: 2px; }
+        .chip.locked { opacity: 0.2; cursor: default; }
+
+        /* ── Sync bar ── */
+        .sync-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            background: var(--c-card);
+            border-bottom: 1px solid var(--c-border);
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .sync-status { display: flex; align-items: center; gap: 6px; color: var(--c-muted); }
+        .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+        .sync-dot.synced { background: #10b981; }
+        .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
+        .sync-dot.error { background: #ef4444; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        .pin-label { font-size: 11px; font-weight: 700; color: var(--c-muted); letter-spacing: 0.05em; }
+
+        /* ── Main list ── */
+        main { flex: 1; overflow-y: auto; padding: 12px 12px calc(80px + var(--safe-bottom)); -webkit-overflow-scrolling: touch; }
+
+        .list-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 8px; }
+        .list-label { font-size: 10px; font-weight: 900; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+        .multi-btn { font-size: 12px; font-weight: 700; color: var(--c-muted); background: none; border: none; cursor: pointer; text-decoration: underline; }
+        .multi-btn.active { color: #d97706; text-decoration: none; }
+
+        .multi-confirm-btn {
+            width: 100%; padding: 16px;
+            background: #059669; color: #fff;
+            border: none; border-radius: 16px;
+            font-size: 16px; font-weight: 900;
+            cursor: pointer; margin-bottom: 12px;
+            box-shadow: 0 4px 16px rgba(5,150,105,0.3);
+            font-family: inherit;
+        }
+        .multi-confirm-btn:active { transform: scale(0.98); }
+
+        /* Surah card */
+        .surah-card {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px;
+            background: var(--c-card);
+            border: 2px solid var(--c-card);
+            border-radius: 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.15s;
+            -webkit-user-select: none; user-select: none;
+        }
+        .surah-card:active { transform: scale(0.97); }
+        .surah-card.done { background: #f0fdf4; border-color: #d1fae5; }
+        .surah-card.selected { border-color: #f59e0b; background: #fffbeb; }
+        .surah-card.today:not(.done) { border-color: #fde68a; background: #fffdf0; }
+
+        .card-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .surah-num {
+            width: 38px; height: 38px; flex-shrink: 0;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 12px;
+            background: #f1f5f9; color: #94a3b8;
+        }
+        .surah-num.done { background: #059669; color: #fff; }
+
+        .surah-name { font-weight: 900; font-size: 15px; color: var(--c-text); display: flex; align-items: center; gap: 6px; }
+        .today-tag { font-size: 9px; font-weight: 700; background: #f59e0b; color: #fff; padding: 2px 6px; border-radius: 20px; }
+        .surah-meta { font-size: 11px; color: var(--c-muted); margin-top: 2px; display: flex; gap: 8px; }
+
+        .card-right { flex-shrink: 0; }
+        .done-badge { font-size: 10px; font-weight: 900; color: #059669; background: #d1fae5; padding: 4px 10px; border-radius: 10px; white-space: nowrap; }
+        .undone-circle { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cbd5e1; }
+
+        /* ── Views: Stats & Plan ── */
+        .view-header {
+            background: linear-gradient(160deg, #0f172a, #1e293b);
+            color: #fff;
+            padding: calc(16px + var(--safe-top)) 16px 24px;
+            border-radius: 0 0 24px 24px;
+            flex-shrink: 0;
+        }
+        .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #94a3b8; background: none; border: none; cursor: pointer; margin-bottom: 12px; font-family: inherit; }
+        .back-btn svg { width: 14px; height: 14px; }
+        .view-title { font-size: 26px; font-weight: 900; }
+        .view-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+        .view-body { flex: 1; overflow-y: auto; padding: 16px 12px calc(40px + var(--safe-bottom)); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: var(--c-card); border: 2px solid var(--c-border); border-radius: 16px; padding: 16px; text-align: center; }
+        .stat-val { font-size: 28px; font-weight: 900; }
+        .stat-val.green { color: #059669; }
+        .stat-val.amber { color: #d97706; }
+        .stat-label { font-size: 10px; font-weight: 700; color: var(--c-muted); margin-top: 4px; }
+
+        .section-card { background: var(--c-card); border: 2px solid var(--c-border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .section-title { font-size: 11px; font-weight: 900; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+        .action-btn {
+            width: 100%; padding: 14px;
+            border-radius: 12px;
+            font-size: 14px; font-weight: 900;
+            cursor: pointer; margin-bottom: 8px;
+            font-family: inherit; border: none;
+        }
+        .action-btn.dark { background: #0f172a; color: #fff; }
+        .action-btn.light { background: #f1f5f9; color: #0f172a; border: 2px solid var(--c-border); }
+        .action-btn.pin { background: #eff6ff; color: #1d4ed8; border: 2px solid #bfdbfe; }
+        .action-btn:active { transform: scale(0.98); }
+
+        /* Plan view */
+        .plan-card { background: var(--c-card); border: 2px solid var(--c-border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .plan-input {
+            width: 100%; background: #f8fafc; border: 2px solid var(--c-border);
+            border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700;
+            text-align: center; outline: none; font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        .plan-input:focus { border-color: #059669; }
+        .plan-btn {
+            width: 100%; margin-top: 10px; padding: 14px;
+            background: #059669; color: #fff;
+            border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 900;
+            cursor: pointer; font-family: inherit;
+            box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+        }
+        .plan-btn:active { transform: scale(0.98); }
+        .plan-info { background: #f0fdf4; border: 2px solid #d1fae5; border-radius: 14px; padding: 14px; }
+        .plan-info-title { font-weight: 900; font-size: 14px; color: #065f46; margin-bottom: 6px; }
+        .plan-info-text { font-size: 13px; color: #047857; line-height: 1.5; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(15,23,42,0.75);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: flex-end; justify-content: center;
+            padding: 0 0 calc(16px + var(--safe-bottom));
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        .modal-sheet {
+            background: var(--c-card);
+            border-radius: 24px 24px 20px 20px;
+            width: 100%; max-width: 540px;
+            padding: 24px 20px 20px;
+            animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+            box-shadow: 0 -8px 48px rgba(0,0,0,0.2);
+        }
+        @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+        .modal-handle { width: 40px; height: 4px; background: #e2e8f0; border-radius: 99px; margin: 0 auto 20px; }
+        .modal-title { font-size: 20px; font-weight: 900; text-align: center; }
+        .modal-sub { font-size: 12px; color: var(--c-muted); text-align: center; margin-top: 4px; margin-bottom: 20px; }
+        .modal-date-input {
+            width: 100%; background: #f8fafc; border: 2px solid var(--c-border);
+            border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 700;
+            outline: none; font-family: inherit; margin-bottom: 10px;
+            transition: border-color 0.15s;
+        }
+        .modal-date-input:focus { border-color: #059669; }
+        .modal-text-input {
+            width: 100%; background: #f8fafc; border: 2px solid var(--c-border);
+            border-radius: 12px; padding: 14px; font-size: 18px; font-weight: 900;
+            text-align: center; outline: none; font-family: inherit; margin-bottom: 16px;
+            transition: border-color 0.15s;
+        }
+        .modal-text-input:focus { border-color: #059669; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-cancel { flex: 1; padding: 14px; font-size: 14px; font-weight: 700; color: var(--c-muted); background: none; border: none; cursor: pointer; font-family: inherit; }
+        .modal-confirm { flex: 2; padding: 14px; background: #059669; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; font-family: inherit; box-shadow: 0 4px 12px rgba(5,150,105,0.25); }
+        .modal-confirm:active { transform: scale(0.98); }
+
+        /* ── PIN setup modal ── */
+        .pin-modal-overlay {
+            position: fixed; inset: 0; z-index: 300;
+            background: rgba(15,23,42,0.85);
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .pin-modal {
+            background: var(--c-card);
+            border-radius: 24px;
+            padding: 28px 24px;
+            width: 100%; max-width: 380px;
+            animation: slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .pin-modal-title { font-size: 22px; font-weight: 900; text-align: center; margin-bottom: 8px; }
+        .pin-modal-sub { font-size: 13px; color: var(--c-muted); text-align: center; line-height: 1.5; margin-bottom: 20px; }
+        .pin-input {
+            width: 100%; background: #f8fafc; border: 2px solid var(--c-border);
+            border-radius: 12px; padding: 16px; font-size: 28px; font-weight: 900;
+            text-align: center; outline: none; font-family: inherit; letter-spacing: 0.2em;
+            margin-bottom: 12px; transition: border-color 0.15s;
+        }
+        .pin-input:focus { border-color: #059669; }
+        .pin-submit {
+            width: 100%; padding: 15px; background: #0f172a; color: #fff;
+            border: none; border-radius: 12px; font-size: 16px; font-weight: 900;
+            cursor: pointer; font-family: inherit; margin-bottom: 10px;
+        }
+        .pin-warning { font-size: 11px; color: var(--c-muted); text-align: center; line-height: 1.4; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+            background: #0f172a; color: #fff;
+            padding: 10px 20px; border-radius: 99px;
+            font-size: 13px; font-weight: 700;
+            z-index: 500; white-space: nowrap;
+            animation: toastIn 0.25s ease, toastOut 0.3s ease 2s forwards;
+        }
+        @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(12px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
+        @keyframes toastOut { to { opacity:0; transform:translateX(-50%) translateY(12px) } }
+
+        /* Utility */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════
+const SURA_DATA = [
+    {id:1,name:"الفاتحة",pages:1,juz:1},{id:2,name:"البقرة",pages:48,juz:1},{id:3,name:"آل عمران",pages:27,juz:3},{id:4,name:"النساء",pages:29,juz:4},{id:5,name:"المائدة",pages:22,juz:6},{id:6,name:"الأنعام",pages:23,juz:7},{id:7,name:"الأعراف",pages:26,juz:8},{id:8,name:"الأنفال",pages:10,juz:9},{id:9,name:"التوبة",pages:21,juz:10},{id:10,name:"يونس",pages:13,juz:11},{id:11,name:"هود",pages:14,juz:11},{id:12,name:"يوسف",pages:13,juz:12},{id:13,name:"الرعد",pages:6,juz:13},{id:14,name:"إبراهيم",pages:7,juz:13},{id:15,name:"الحجر",pages:5,juz:14},{id:16,name:"النحل",pages:15,juz:14},{id:17,name:"الإسراء",pages:12,juz:15},{id:18,name:"الكهف",pages:12,juz:15},{id:19,name:"مريم",pages:7,juz:16},{id:20,name:"طه",pages:10,juz:16},{id:21,name:"الأنبياء",pages:10,juz:17},{id:22,name:"الحج",pages:10,juz:17},{id:23,name:"المؤمنون",pages:8,juz:18},{id:24,name:"النور",pages:9,juz:18},{id:25,name:"الفرقان",pages:6,juz:18},{id:26,name:"الشعراء",pages:9,juz:19},{id:27,name:"النمل",pages:9,juz:19},{id:28,name:"القصص",pages:10,juz:20},{id:29,name:"العنكبوت",pages:7,juz:20},{id:30,name:"الروم",pages:6,juz:21},{id:31,name:"لقمان",pages:4,juz:21},{id:32,name:"السجدة",pages:3,juz:21},{id:33,name:"الأحزاب",pages:9,juz:21},{id:34,name:"سبأ",pages:6,juz:22},{id:35,name:"فاطر",pages:6,juz:22},{id:36,name:"يس",pages:5,juz:22},{id:37,name:"الصافات",pages:7,juz:23},{id:38,name:"ص",pages:5,juz:23},{id:39,name:"الزمر",pages:9,juz:23},{id:40,name:"غافر",pages:9,juz:24},{id:41,name:"فصلت",pages:6,juz:24},{id:42,name:"الشورى",pages:6,juz:25},{id:43,name:"الزخرف",pages:6,juz:25},{id:44,name:"الدخان",pages:3,juz:25},{id:45,name:"الجاثية",pages:3,juz:25},{id:46,name:"الأحقاف",pages:5,juz:26},{id:47,name:"محمد",pages:4,juz:26},{id:48,name:"الفتح",pages:4,juz:26},{id:49,name:"الحجرات",pages:2,juz:26},{id:50,name:"ق",pages:2,juz:26},{id:51,name:"الذاريات",pages:3,juz:26},{id:52,name:"الطور",pages:2,juz:27},{id:53,name:"النجم",pages:2,juz:27},{id:54,name:"القمر",pages:3,juz:27},{id:55,name:"الرحمن",pages:3,juz:27},{id:56,name:"الواقعة",pages:3,juz:27},{id:57,name:"الحديد",pages:4,juz:27},{id:58,name:"المجادلة",pages:3,juz:28},{id:59,name:"الحشر",pages:3,juz:28},{id:60,name:"الممتحنة",pages:2,juz:28},{id:61,name:"الصف",pages:1,juz:28},{id:62,name:"الجمعة",pages:1,juz:28},{id:63,name:"المنافقون",pages:1,juz:28},{id:64,name:"التغابن",pages:2,juz:28},{id:65,name:"الطلاق",pages:2,juz:28},{id:66,name:"التحريم",pages:2,juz:28},{id:67,name:"الملك",pages:2,juz:29},{id:68,name:"القلم",pages:2,juz:29},{id:69,name:"الحاقة",pages:2,juz:29},{id:70,name:"المعارج",pages:2,juz:29},{id:71,name:"نوح",pages:2,juz:29},{id:72,name:"الجن",pages:2,juz:29},{id:73,name:"المزمل",pages:2,juz:29},{id:74,name:"المدثر",pages:2,juz:29},{id:75,name:"القيامة",pages:1,juz:29},{id:76,name:"الإنسان",pages:2,juz:29},{id:77,name:"المرسلات",pages:2,juz:29},{id:78,name:"النبأ",pages:1,juz:30},{id:79,name:"النازعات",pages:2,juz:30},{id:80,name:"عبس",pages:1,juz:30},{id:81,name:"التكوير",pages:1,juz:30},{id:82,name:"الانفطار",pages:1,juz:30},{id:83,name:"المطففين",pages:2,juz:30},{id:84,name:"الانشقاق",pages:1,juz:30},{id:85,name:"البروج",pages:1,juz:30},{id:86,name:"الطارق",pages:1,juz:30},{id:87,name:"الأعلى",pages:1,juz:30},{id:88,name:"الغاشية",pages:1,juz:30},{id:89,name:"الفجر",pages:2,juz:30},{id:90,name:"البلد",pages:1,juz:30},{id:91,name:"الشمس",pages:1,juz:30},{id:92,name:"الليل",pages:1,juz:30},{id:93,name:"الضحى",pages:1,juz:30},{id:94,name:"الشرح",pages:1,juz:30},{id:95,name:"التين",pages:1,juz:30},{id:96,name:"العلق",pages:1,juz:30},{id:97,name:"القدر",pages:1,juz:30},{id:98,name:"البينة",pages:1,juz:30},{id:99,name:"الزلزلة",pages:1,juz:30},{id:100,name:"العاديات",pages:1,juz:30},{id:101,name:"القارعة",pages:1,juz:30},{id:102,name:"التكاثر",pages:1,juz:30},{id:103,name:"العصر",pages:1,juz:30},{id:104,name:"الهمزة",pages:1,juz:30},{id:105,name:"الفيل",pages:1,juz:30},{id:106,name:"قريش",pages:1,juz:30},{id:107,name:"الماعون",pages:1,juz:30},{id:108,name:"الكوثر",pages:1,juz:30},{id:109,name:"الكافرون",pages:1,juz:30},{id:110,name:"النصر",pages:1,juz:30},{id:111,name:"المسد",pages:1,juz:30},{id:112,name:"الإخلاص",pages:1,juz:30},{id:113,name:"الفلق",pages:1,juz:30},{id:114,name:"الناس",pages:1,juz:30}
+];
+
+// ═══════════════════════════════════════
+//  CLOUD SYNC — JSONBin.io
+//  Each PIN maps to a named bin on JSONBin.
+//  We use the free public API (no account needed for reading).
+//  Master API key is embedded for writing (free tier).
+// ═══════════════════════════════════════
+
+// ⚠️  To get your own free API key:
+//   1. Go to https://jsonbin.io  →  sign up free
+//   2. Go to API Keys → Create key
+//   3. Replace the value below with your key
+//   Until then the app works offline-only with localStorage as fallback.
+const JSONBIN_API_KEY = '$2a$10$UQRnc2u6T0E.4WkVWxwUFukn8Gjl/iDyo4cY.9g9JlUiGF5Datg/S';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
+
+// We store a mapping of PIN → binId in localStorage so we don't
+// create a new bin on every session.
+const BIN_MAP_KEY = 'khatmah_bin_map';
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const LOCAL_KEY = 'khatmah_data_v2';
+
+let state = {
+    khatmahs: loadLocal(),
+    activeKhatmah: 1,
+    view: 'home',
+    isMulti: false,
+    selected: [],
+    modal: { show: false, ids: [], type: '' },
+    pin: localStorage.getItem('khatmah_pin') || null,
+    binId: null,
+    syncStatus: 'idle',   // idle | syncing | synced | error
+    streak: 0,
+    showPinSetup: false,
+};
+
+function generateInitialData() {
+    return Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        isLocked: i !== 0,
+        isCompleted: false,
+        startedAt: null,
+        completedAt: null,
+        deadline: null,
+        surahs: SURA_DATA.map(s => ({ ...s, isDone: false, completedAt: null, durationMs: null }))
+    }));
+}
+
+function loadLocal() {
+    try {
+        const raw = localStorage.getItem(LOCAL_KEY);
+        return raw ? JSON.parse(raw) : generateInitialData();
+    } catch(e) {
+        return generateInitialData();
+    }
+}
+
+function saveLocal(data) {
+    try {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+    } catch(e) {
+        console.warn('localStorage full or blocked', e);
+    }
+}
+
+// ═══════════════════════════════════════
+//  SYNC ENGINE
+// ═══════════════════════════════════════
+
+function getBinMap() {
+    try { return JSON.parse(localStorage.getItem(BIN_MAP_KEY) || '{}'); }
+    catch(e) { return {}; }
+}
+function saveBinMap(map) {
+    try { localStorage.setItem(BIN_MAP_KEY, JSON.stringify(map)); }
+    catch(e) {}
+}
+
+async function getOrCreateBin(pin) {
+    const map = getBinMap();
+    if (map[pin]) return map[pin];
+
+    // Create a new bin for this PIN
+    try {
+        const res = await fetch(`${JSONBIN_BASE}/b`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_API_KEY,
+                'X-Bin-Name': `khatmah_pin_${pin}`,
+                'X-Bin-Private': 'false'
+            },
+            body: JSON.stringify({ data: generateInitialData(), pin })
+        });
+        if (!res.ok) throw new Error('create bin failed');
+        const json = await res.json();
+        const binId = json.metadata.id;
+        map[pin] = binId;
+        saveBinMap(map);
+        return binId;
+    } catch(e) {
+        console.error('Could not create bin:', e);
+        return null;
+    }
+}
+
+async function cloudPull(pin) {
+    if (!pin || JSONBIN_API_KEY.includes('PLACEHOLDER')) return null;
+    state.syncStatus = 'syncing'; renderSyncBar();
+    try {
+        const map = getBinMap();
+        const binId = map[pin];
+        if (!binId) return null; // no bin yet for this PIN — first use
+
+        const res = await fetch(`${JSONBIN_BASE}/b/${binId}/latest`, {
+            headers: { 'X-Master-Key': JSONBIN_API_KEY }
+        });
+        if (!res.ok) throw new Error('pull failed');
+        const json = await res.json();
+        state.syncStatus = 'synced';
+        return json.record.data || null;
+    } catch(e) {
+        console.error('Cloud pull failed:', e);
+        state.syncStatus = 'error';
+        renderSyncBar();
+        return null;
+    }
+}
+
+let saveDebounceTimer = null;
+async function cloudPush(pin, data) {
+    if (!pin || JSONBIN_API_KEY.includes('PLACEHOLDER')) return;
+
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(async () => {
+        state.syncStatus = 'syncing'; renderSyncBar();
+        try {
+            let binId = state.binId;
+            if (!binId) {
+                binId = await getOrCreateBin(pin);
+                state.binId = binId;
+            }
+            if (!binId) throw new Error('no bin');
+
+            const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
+                },
+                body: JSON.stringify({ data, pin })
+            });
+            if (!res.ok) throw new Error('push failed');
+            state.syncStatus = 'synced';
+            renderSyncBar();
+        } catch(e) {
+            console.error('Cloud push failed:', e);
+            state.syncStatus = 'error';
+            renderSyncBar();
+        }
+    }, 1200);
+}
+
+// ═══════════════════════════════════════
+//  COMPUTED
+// ═══════════════════════════════════════
+
+function computeStreak() {
+    const allSurahs = state.khatmahs.flatMap(k => k.surahs).filter(s => s.isDone && s.completedAt);
+    if (!allSurahs.length) return 0;
+    const dates = [...new Set(allSurahs.map(s => new Date(s.completedAt).toDateString()))]
+        .map(d => new Date(d).getTime()).sort((a,b) => b - a);
+    let streak = 0, cur = new Date().setHours(0,0,0,0);
+    for (let d of dates) {
+        if (d === cur || d === cur - 86400000) { streak++; cur = d; }
+        else break;
+    }
+    return streak;
+}
+
+function getTodaysPortion(k) {
+    if (!k.deadline || k.isCompleted) return [];
+    const remaining = k.surahs.filter(s => !s.isDone);
+    if (!remaining.length) return [];
+    const daysLeft = Math.ceil((new Date(k.deadline) - new Date()) / 86400000);
+    if (daysLeft <= 0) return remaining.map(s => s.id);
+    const pagesLeft = remaining.reduce((a, s) => a + s.pages, 0);
+    const pagesPerDay = Math.ceil(pagesLeft / daysLeft);
+    let portion = [], sum = 0;
+    for (let s of remaining) {
+        if (sum < pagesPerDay) { portion.push(s.id); sum += s.pages; }
+        else break;
+    }
+    return portion;
+}
+
+function formatTimeDiff(ms) {
+    if (!ms || ms < 0) return '';
+    const m = Math.floor((ms/60000)%60), h = Math.floor((ms/3600000)%24), d = Math.floor(ms/86400000);
+    if (d > 0) return `${d} يوم`;
+    if (h > 0) return `${h} ساعة`;
+    if (m > 0) return `${m} دقيقة`;
+    return 'للتو';
+}
+
+// ═══════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════
+
+function renderSyncBar() {
+    const bar = document.getElementById('sync-bar');
+    if (!bar) return;
+    const dotClass = {idle:'',syncing:'syncing',synced:'synced',error:'error'}[state.syncStatus] || '';
+    const label = {idle:'محلي فقط',syncing:'جاري المزامنة...',synced:'تمت المزامنة',error:'خطأ في المزامنة'}[state.syncStatus] || '';
+    bar.innerHTML = `
+        <div class="sync-status">
+            <div class="sync-dot ${dotClass}"></div>
+            <span>${label}</span>
+        </div>
+        <button onclick="openPinSetup()" class="pin-label">${state.pin ? 'رمز: ' + state.pin : 'إعداد المزامنة +'}</button>
+    `;
+}
+
+function showToast(msg) {
+    const old = document.getElementById('toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.id = 'toast'; t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+}
+
+// ═══════════════════════════════════════
+//  MAIN RENDER
+// ═══════════════════════════════════════
+
+function render() {
+    state.streak = computeStreak();
+    const app = document.getElementById('app');
+    if (state.view === 'stats') { renderStats(app); return; }
+    if (state.view === 'plan') { renderPlan(app); return; }
+    renderHome(app);
+}
+
+function renderHome(app) {
+    const k = state.khatmahs.find(x => x.id === state.activeKhatmah);
+    const doneCount = k.surahs.filter(s => s.isDone).length;
+    const progress = Math.round((doneCount / 114) * 100);
+    const portion = getTodaysPortion(k);
+    const visibleCount = state.khatmahs.filter(x => x.isCompleted).length + 5;
+
+    app.innerHTML = `
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                    <div class="khatmah-badge">${k.id}</div>
+                    <div style="min-width:0">
+                        <div class="header-title">الختمة الحالية</div>
+                        <div class="streak-row">
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c-1 2-3 3.5-3 6 0 1.7 1.3 3 3 3s3-1.3 3-3c0-.4-.1-.8-.2-1.2C16.2 8 17 10 17 12c0 2.8-2.2 5-5 5s-5-2.2-5-5c0-3.5 2.5-6.5 5-10z"/></svg>
+                            تتابع القراءة: ${state.streak} ${state.streak === 1 ? 'يوم' : 'أيام'}
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="state.view='plan';render()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </button>
+                    <button class="icon-btn" onclick="state.view='stats';render()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="progress-section">
+                <div class="progress-labels">
+                    <span class="progress-level">المستوى ${Math.floor(progress/10)+1}</span>
+                    <span class="progress-pct">${doneCount} / 114 سورة</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+            </div>
+            <div class="chips-row">
+                ${state.khatmahs.slice(0, visibleCount).map(item => `
+                    <button class="chip ${state.activeKhatmah===item.id?'active':''} ${item.isCompleted?'completed':''} ${item.isLocked?'locked':''}"
+                        onclick="${item.isLocked?'':'state.activeKhatmah='+item.id+';render()'}">${item.id}</button>
+                `).join('')}
+            </div>
+        </header>
+
+        <!-- Sync bar -->
+        <div id="sync-bar" class="sync-bar"></div>
+
+        <!-- Surah list -->
+        <main>
+            <div class="list-header">
+                <span class="list-label">ترتيب السور</span>
+                <button class="multi-btn ${state.isMulti?'active':''}" onclick="state.isMulti=!state.isMulti;state.selected=[];render()">
+                    ${state.isMulti ? 'إنهاء التحديد' : 'تحديد متعدد'}
+                </button>
+            </div>
+
+            ${state.isMulti && state.selected.length > 0 ? `
+                <button class="multi-confirm-btn" onclick="openMultiConfirm()">
+                    إتمام السور المحددة (${state.selected.length})
+                </button>
+            ` : ''}
+
+            ${k.surahs.map(s => {
+                const isToday = portion.includes(s.id);
+                const isSelected = state.selected.includes(s.id);
+                return `
+                <div class="surah-card ${s.isDone?'done':''} ${isSelected?'selected':''} ${isToday?'today':''}"
+                     onclick="handleSurahClick(${s.id})">
+                    <div class="card-left">
+                        <div class="surah-num ${s.isDone?'done':''}">${s.id}</div>
+                        <div>
+                            <div class="surah-name">
+                                سورة ${s.name}
+                                ${isToday && !s.isDone ? '<span class="today-tag">ورد اليوم</span>' : ''}
+                            </div>
+                            <div class="surah-meta">
+                                <span>جزء ${s.juz}</span>
+                                <span>${s.pages} صفحة</span>
+                                ${s.isDone ? '<span style="color:#059669">• تم</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        ${s.isDone
+                            ? `<div class="done-badge">${formatTimeDiff(s.durationMs)}</div>`
+                            : `<div class="undone-circle"></div>`}
+                    </div>
+                </div>`;
+            }).join('')}
+        </main>
+
+        ${state.modal.show ? renderModal() : ''}
+        ${state.showPinSetup ? renderPinModal() : ''}
+    `;
+
+    renderSyncBar();
+}
+
+function renderStats(app) {
+    const allDone = state.khatmahs.flatMap(k => k.surahs).filter(s => s.isDone);
+    const totalPages = allDone.reduce((a,s) => a+s.pages, 0);
+    const completedKhatmahs = state.khatmahs.filter(x => x.isCompleted).length;
+
+    app.innerHTML = `
+        <div class="view-header">
+            <button class="back-btn" onclick="state.view='home';render()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                العودة
+            </button>
+            <div class="view-title">إحصائياتك</div>
+        </div>
+        <div class="view-body">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-val green">${totalPages}</div><div class="stat-label">إجمالي الصفحات</div></div>
+                <div class="stat-card"><div class="stat-val amber">${completedKhatmahs}</div><div class="stat-label">ختمات كاملة</div></div>
+                <div class="stat-card"><div class="stat-val green">${allDone.length}</div><div class="stat-label">سور مقروءة</div></div>
+                <div class="stat-card"><div class="stat-val amber">${state.streak}</div><div class="stat-label">أيام التتابع</div></div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">المزامنة عبر الأجهزة</div>
+                <button class="action-btn pin" onclick="openPinSetup()">
+                    ${state.pin ? 'رمز المزامنة: ' + state.pin + ' — تغيير' : 'إعداد رمز المزامنة'}
+                </button>
+                ${state.pin ? `<button class="action-btn light" onclick="forcePull()">سحب آخر نسخة من السحابة</button>` : ''}
+            </div>
+
+            <div class="section-card">
+                <div class="section-title">النسخ الاحتياطي اليدوي</div>
+                <button class="action-btn dark" onclick="exportData()">تصدير نسخة احتياطية</button>
+                <button class="action-btn light" onclick="document.getElementById('fileIn').click()">استيراد بيانات</button>
+                <input type="file" id="fileIn" class="hidden" onchange="importData(event)" accept=".json">
+            </div>
+        </div>
+        ${state.showPinSetup ? renderPinModal() : ''}
+    `;
+}
+
+function renderPlan(app) {
+    const k = state.khatmahs.find(x => x.id === state.activeKhatmah);
+    app.innerHTML = `
+        <div class="view-header">
+            <button class="back-btn" onclick="state.view='home';render()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                العودة
+            </button>
+            <div class="view-title">تخطيط الختمة</div>
+            <div class="view-subtitle">حدد موعداً وسيتم توزيع السور تلقائياً</div>
+        </div>
+        <div class="view-body">
+            <div class="plan-card">
+                <div class="section-title">موعد ختم القرآن المستهدف</div>
+                <input type="date" id="deadlineInput" class="plan-input" value="${k.deadline || ''}">
+                <button class="plan-btn" onclick="setDeadline()">تحديث الخطة الذكية</button>
+            </div>
+            ${k.deadline ? `
+                <div class="plan-info">
+                    <div class="plan-info-title">الخطة نشطة</div>
+                    <div class="plan-info-text">
+                        سيتم توزيع السور الباقية يومياً للوصول للهدف بحلول
+                        <strong>${new Date(k.deadline).toLocaleDateString('ar-EG')}</strong>.
+                        ستظهر سور اليوم بعلامة "ورد اليوم".
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderModal() {
+    const count = state.modal.ids.length;
+    return `
+        <div class="modal-overlay" onclick="closeModal(event)">
+            <div class="modal-sheet" onclick="event.stopPropagation()">
+                <div class="modal-handle"></div>
+                <div class="modal-title">تأكيد الإنجاز</div>
+                <div class="modal-sub">سيتم تسجيل إتمام ${count} سورة</div>
+                <input type="datetime-local" id="modalDate" class="modal-date-input">
+                <input type="text" id="modalInput" class="modal-text-input" placeholder="اكتب '${state.modal.type}' للتأكيد" autocomplete="off">
+                <div class="modal-actions">
+                    <button class="modal-cancel" onclick="state.modal.show=false;render()">تراجع</button>
+                    <button class="modal-confirm" onclick="confirmAction()">تأكيد</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderPinModal() {
+    return `
+        <div class="pin-modal-overlay">
+            <div class="pin-modal">
+                <div class="pin-modal-title">رمز المزامنة</div>
+                <div class="pin-modal-sub">
+                    أدخل رمزاً من 4-6 أرقام.<br>
+                    أي جهاز يدخل نفس الرمز سيشارك نفس البيانات تلقائياً.
+                </div>
+                <input type="number" id="pinInput" class="pin-input" placeholder="0000"
+                    value="${state.pin || ''}" maxlength="6" inputmode="numeric">
+                <button class="pin-submit" onclick="savePin()">حفظ الرمز والمزامنة</button>
+                <button style="width:100%;padding:12px;background:none;border:none;font-size:13px;color:#94a3b8;cursor:pointer;font-family:inherit" onclick="state.showPinSetup=false;render()">
+                    إلغاء
+                </button>
+                <div class="pin-warning">
+                    ⚠️ الرمز هو المفتاح الوحيد للوصول لبياناتك.<br>لا توجد استعادة عند النسيان. احفظه جيداً.
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ═══════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════
+
+function handleSurahClick(id) {
+    if (state.isMulti) {
+        if (state.selected.includes(id)) state.selected = state.selected.filter(x => x !== id);
+        else state.selected.push(id);
+        render();
+        return;
+    }
+    const k = state.khatmahs.find(x => x.id === state.activeKhatmah);
+    const s = k.surahs.find(x => x.id === id);
+    state.modal = { show: true, ids: [id], type: s.isDone ? 'الغاء' : 'تم' };
+    render();
+    // Pre-fill date input with now
+    setTimeout(() => {
+        const d = document.getElementById('modalDate');
+        if (d) {
+            const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            d.value = now.toISOString().slice(0,16);
+        }
+    }, 50);
+}
+
+function openMultiConfirm() {
+    state.modal = { show: true, ids: [...state.selected], type: 'تم' };
+    render();
+    setTimeout(() => {
+        const d = document.getElementById('modalDate');
+        if (d) {
+            const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            d.value = now.toISOString().slice(0,16);
+        }
+    }, 50);
+}
+
+function closeModal(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+        state.modal.show = false; render();
+    }
+}
+
+function confirmAction() {
+    const valEl = document.getElementById('modalInput');
+    const dateEl = document.getElementById('modalDate');
+    if (!valEl) return;
+    if (valEl.value.trim() !== state.modal.type) {
+        valEl.style.borderColor = '#ef4444';
+        setTimeout(() => { valEl.style.borderColor = ''; }, 800);
+        return;
+    }
+
+    const customTs = dateEl && dateEl.value ? new Date(dateEl.value).getTime() : Date.now();
+    const kIdx = state.khatmahs.findIndex(k => k.id === state.activeKhatmah);
+    const k = state.khatmahs[kIdx];
+
+    state.modal.ids.forEach(id => {
+        const s = k.surahs.find(x => x.id === id);
+        if (state.modal.type === 'تم') {
+            if (!s.isDone) {
+                s.isDone = true;
+                s.completedAt = customTs;
+                if (!k.startedAt || customTs < k.startedAt) k.startedAt = customTs;
+                const prevDone = k.surahs.filter(x => x.isDone && x.id !== id && x.completedAt < customTs)
+                    .sort((a,b) => b.completedAt - a.completedAt);
+                s.durationMs = prevDone.length ? customTs - prevDone[0].completedAt : 0;
+            }
+        } else {
+            s.isDone = false; s.completedAt = null; s.durationMs = null;
+        }
+    });
+
+    k.isCompleted = k.surahs.every(s => s.isDone);
+    if (k.isCompleted) {
+        k.completedAt = Math.max(...k.surahs.map(s => s.completedAt));
+        if (kIdx < 99) state.khatmahs[kIdx+1].isLocked = false;
+        showToast('مبارك! أتممت الختمة 🎉');
+    }
+
+    state.modal.show = false;
+    state.isMulti = false;
+    state.selected = [];
+    persist();
+}
+
+function setDeadline() {
+    const val = document.getElementById('deadlineInput').value;
+    const k = state.khatmahs.find(x => x.id === state.activeKhatmah);
+    k.deadline = val || null;
+    state.view = 'home';
+    persist();
+    showToast('تم تحديث الخطة');
+}
+
+function persist() {
+    saveLocal(state.khatmahs);
+    render();
+    if (state.pin) cloudPush(state.pin, state.khatmahs);
+}
+
+// ═══════════════════════════════════════
+//  PIN & SYNC
+// ═══════════════════════════════════════
+
+function openPinSetup() {
+    state.showPinSetup = true;
+    render();
+    setTimeout(() => { const el = document.getElementById('pinInput'); if(el) el.focus(); }, 100);
+}
+
+async function savePin() {
+    const el = document.getElementById('pinInput');
+    if (!el) return;
+    const pin = el.value.trim();
+    if (!pin || pin.length < 4) { el.style.borderColor='#ef4444'; return; }
+
+    state.pin = pin;
+    localStorage.setItem('khatmah_pin', pin);
+    state.showPinSetup = false;
+    state.syncStatus = 'syncing';
+    render();
+    showToast('جاري المزامنة...');
+
+    // Try to pull existing data for this PIN
+    const remoteData = await cloudPull(pin);
+    if (remoteData && Array.isArray(remoteData)) {
+        // Merge: use remote data as it may be more up-to-date
+        state.khatmahs = remoteData;
+        saveLocal(state.khatmahs);
+        state.syncStatus = 'synced';
+        showToast('تم استيراد بياناتك السحابية');
+        render();
+    } else {
+        // No remote data — push local data to create the bin
+        state.syncStatus = 'synced';
+        cloudPush(pin, state.khatmahs);
+        showToast('تم ربط الرمز. بياناتك ستُزامن الآن.');
+        render();
+    }
+}
+
+async function forcePull() {
+    if (!state.pin) return;
+    showToast('جاري السحب من السحابة...');
+    const remoteData = await cloudPull(state.pin);
+    if (remoteData && Array.isArray(remoteData)) {
+        state.khatmahs = remoteData;
+        saveLocal(state.khatmahs);
+        showToast('تم التحديث من السحابة');
+    } else {
+        showToast('لا توجد بيانات سحابية بعد');
+    }
+    render();
+}
+
+// ═══════════════════════════════════════
+//  EXPORT / IMPORT
+// ═══════════════════════════════════════
+
+function exportData() {
+    const blob = new Blob([JSON.stringify(state.khatmahs, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `khatmah_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            const parsed = JSON.parse(ev.target.result);
+            if (!Array.isArray(parsed)) throw new Error('invalid');
+            state.khatmahs = parsed;
+            persist();
+            showToast('تم استيراد البيانات بنجاح');
+        } catch {
+            showToast('ملف غير صالح');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+
+async function init() {
+    render();
+
+    // If user has a saved PIN, auto-pull on startup
+    if (state.pin && !JSONBIN_API_KEY.includes('PLACEHOLDER')) {
+        state.syncStatus = 'syncing';
+        renderSyncBar();
+        const remote = await cloudPull(state.pin);
+        if (remote && Array.isArray(remote)) {
+            state.khatmahs = remote;
+            saveLocal(state.khatmahs);
+            state.syncStatus = 'synced';
+        } else {
+            state.syncStatus = state.pin ? 'error' : 'idle';
+        }
+        render();
+    }
+}
+
+init();
+</script>
+</body>
+</html>
